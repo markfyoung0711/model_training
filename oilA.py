@@ -111,8 +111,6 @@ def train_time_series_model():
         OPTIONS (
             MODEL_TYPE='AUTOENCODER',
             ACTIVATION_FN='RELU'
-            HIDDEN_UNITS=[64, 32],
-            BATCH_SIZE=128
         ) AS (
             SELECT
                 Oil,
