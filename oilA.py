@@ -11,6 +11,8 @@ from google.cloud import bigquery, error_reporting
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 
+import gen_errors
+
 # constants for communicating with google api
 PROJECT_ID = 'vertex-422616'
 DATASET_ID = 'oil_production_dataset'
@@ -25,7 +27,16 @@ DATE_FIELD_NAME = 'ReportDate'
 OAUTH_CREDENTIALS_FILE = '/Users/markyoung/models/client_secret_913999341270-kgi6b8kvcom433pa5lhveil600um92b7.apps.googleusercontent.com.json'
 
 
-def train_time_series_model():
+def cleanup(df):
+    # Clean up data
+    for col in ['API_WELLNO', 'Oil', 'Wtr', 'Days', 'Runs', 'Gas', 'GasSold', 'Flared']:
+        df.loc[df[col] == 'NR', col] = 0
+        df.loc[df[col].isnull(), col] = 0
+
+    return df
+
+
+def train_time_series_model(introduce_errors=False):
     # Load data from XLSX file
     oil_df = pd.read_excel(XLSX_FILE_PATH, sheet_name='Oil')
     skimmed_crude_recovery_df = pd.read_excel(XLSX_FILE_PATH, sheet_name='SkimmedCrudeRecovery', dtype=str)
@@ -75,13 +86,13 @@ def train_time_series_model():
     fields = ['date', 'API_WELLNO', 'Oil', 'Wtr', 'Days', 'Runs', 'Gas', 'GasSold', 'Flared']
     df = df[fields]
 
-    # Clean up data
-    for col in ['API_WELLNO', 'Oil', 'Wtr', 'Days', 'Runs', 'Gas', 'GasSold', 'Flared']:
-        df.loc[df[col] == 'NR', col] = 0
-        df.loc[df[col].isnull(), col] = 0
+    # Data Cleanup
+    df = cleanup(df)
+
+    if introduce_errors:
+        df = gen_errors.introduce_errors(df, 'Gas', min_error=-10, max_error=10)
 
     # Upload data to BigQuery
-
     # Generate the schema dynamically
     schema = [
         bigquery.SchemaField('date', 'TIMESTAMP'),
@@ -113,6 +124,7 @@ def train_time_series_model():
             ACTIVATION_FN='RELU'
         ) AS (
             SELECT
+                API_WELLNO,
                 Oil,
                 Wtr,
                 Days,
@@ -129,10 +141,10 @@ def train_time_series_model():
     try:
         job = client.query(query)
         job.result()
-    except Exception:
-        print('reporting exception')
+    except Exception as e:
+        print(f'reporting exception:\n{e}')
         err_client = error_reporting.Client()
         err_client.report_exception()
 
 
-train_time_series_model()
+train_time_series_model(introduce_errors=True)
