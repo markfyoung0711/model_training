@@ -1,8 +1,8 @@
 import requests
 from simple_salesforce import Salesforce
 
-consumer_key = "3MVG9JJwBBbcN47I3w518okLS8zi5zEs.920B0Q.1LFO5_SqS25kJntY.HzS.ifPLPgUqkRH1CJl8hFzlj1ML"
-consumer_secret = "9ECFE10BA3196E317699518DB0E1FB144602A3E5A07E0582F0F4EBE28E3613BF"
+consumer_key = 
+consumer_secret = 
 
 oauth_endpoint = f'https://login.salesforce.com/services/oauth2/authorize?response_type=code&client_id={consumer_key}&redirect_uri=https://login.salesforce.com/services/oauth2/success'
 
